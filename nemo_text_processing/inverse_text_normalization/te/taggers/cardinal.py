@@ -18,9 +18,11 @@ class CardinalFst(GraphFst):
         graph_digit = pynini.string_file(get_abs_path("data/numbers/digit.tsv")).invert()
         graph_zero = pynini.string_file(get_abs_path("data/numbers/zero.tsv")).invert()
         graph_teens_and_ties = pynini.string_file(get_abs_path("data/numbers/teens_and_ties.tsv")).invert()
+        graph_compound = pynini.string_file(get_abs_path("data/numbers/compound.tsv")).invert()
+        graph_hundreds = pynini.string_file(get_abs_path("data/numbers/hundreds.tsv")).invert()
 
         # Combine all graphs
-        graph = graph_digit | graph_zero | graph_teens_and_ties
+        graph = graph_digit | graph_zero | graph_teens_and_ties | graph_compound | graph_hundreds
         graph = graph.optimize()
 
         # Wrap with token labels
