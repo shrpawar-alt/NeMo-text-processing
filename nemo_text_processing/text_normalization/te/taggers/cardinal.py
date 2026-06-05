@@ -32,7 +32,8 @@ class CardinalFst(GraphFst):
         # Load the three data files as transducers  (number -> word) 
         digit = pynini.string_file(get_abs_path("data/numbers/digit.tsv")) 
         zero = pynini.string_file(get_abs_path("data/numbers/zero.tsv")) 
-        teens_and_ties = pynini.string_file(get_abs_path("data/numbers/teens_and_ties.tsv")) 
+        teens_and_ties = pynini.string_file(get_abs_path("data/numbers/teens_and_ties.tsv"))
+        tens = pynini.string_file(get_abs_path("/data/numbers/tens.tsv"))
 
         # Predefined numbers (0-9, 10, 11 - 19, 20, 30, 40, 50, 60, 70, 80, 90)
         predefined = digit | zero | teens_and_ties
@@ -40,19 +41,9 @@ class CardinalFst(GraphFst):
         # Two-digit compound (21-29, 31-39,...91-99)
         # For tens digit
         first_digit = pynini.union("2", "3", "4", "5", "6", "7", "8", "9")
-        first_to_tens_value = pynini.string_map([
-            ("2", "20"),
-            ("3", "30"),
-            ("4", "40"),
-            ("5", "50"),
-            ("6", "60"),
-            ("7", "70"),
-            ("8", "80"),
-            ("9", "90"),
-         ]
-        )
+    
         # Convert the tens value to tens word using teens_and_ties 
-        tens_words = first_to_tens_value @ teens_and_ties
+        tens_words = first_digit @ tens
 
         # For units digit
         unit_digit = pynini.union("1", "2", "3", "4", "5", "6", "7", "8", "9")
