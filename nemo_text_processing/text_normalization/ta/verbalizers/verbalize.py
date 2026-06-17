@@ -42,9 +42,7 @@ class VerbalizeFst(GraphFst):
 
         cardinal = CardinalFst(deterministic=deterministic)
         cardinal_graph = cardinal.fst
-
         
-
         graph = (
             cardinal_graph
            
