@@ -60,21 +60,18 @@ class SerialFst(GraphFst):
 
         any_digit = pynini.union(NEMO_DIGIT, devanagari_digits).optimize()
 
-        not_quote = pynini.closure(pynini.difference(NEMO_SIGMA, pynini.accep('"')), 1)
-        strip_cardinal_tags = pynutil.delete('cardinal { integer: "') + not_quote + pynutil.delete('" }')
-
-        pure_cardinal_words = pynini.compose(cardinal.fst, strip_cardinal_tags).optimize()
-
-        length_filter = pynini.closure(any_digit, 1, 3)
-        limited_cardinal = pynini.compose(length_filter, pure_cardinal_words).optimize()
-
-        num_graph = limited_cardinal
+        limited_cardinal_graph = (
+            cardinal.digit
+            | cardinal.zero
+            | cardinal.teens_and_ties
+            | cardinal.graph_hundreds
+        ).optimize()
+        num_graph = limited_cardinal_graph
 
         symbols_graph = pynini.string_file(get_abs_path("data/serial/special_symbols.tsv")).optimize()
 
-        devanagari_chars = pynini.project(
-            pynini.string_file(get_abs_path("data/serial/chars.tsv")),
-            "input",
+        devanagari_chars = pynini.string_file(
+            get_abs_path("data/serial/chars.tsv")
         ).optimize()
 
         letter_graph = pynini.string_file(get_abs_path("data/address/letters.tsv"))
