@@ -15,11 +15,7 @@
 import pynini
 from pynini.lib import pynutil
 
-from nemo_text_processing.text_normalization.hi.graph_utils import (
-    NEMO_NOT_QUOTE,
-    GraphFst,
-    insert_space,
-)
+from nemo_text_processing.text_normalization.hi.graph_utils import NEMO_NOT_QUOTE, GraphFst, insert_space
 from nemo_text_processing.text_normalization.hi.utils import get_abs_path
 
 
@@ -39,57 +35,34 @@ class RomanFst(GraphFst):
     def __init__(self, deterministic: bool = True):
         super().__init__(name="roman", kind="verbalize", deterministic=deterministic)
 
-        roman_to_spoken = pynini.string_file(
-            get_abs_path("data/roman/roman_to_spoken.tsv")
-        ).optimize()
+        roman_to_spoken = pynini.string_file(get_abs_path("data/roman/roman_to_spoken.tsv")).optimize()
 
         key_cardinal = (
-            pynutil.delete('key_cardinal: "')
-            + pynini.closure(NEMO_NOT_QUOTE, 1)
-            + pynutil.delete('"')
+            pynutil.delete('key_cardinal: "') + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete('"')
         ).optimize()
 
-        integer = (
-            pynutil.delete('integer: "')
-            + roman_to_spoken
-            + pynutil.delete('"')
-        ).optimize()
+        integer = (pynutil.delete('integer: "') + roman_to_spoken + pynutil.delete('"')).optimize()
 
         default_ordinal = (
-            pynutil.delete('default_ordinal: "')
-            + pynini.closure(NEMO_NOT_QUOTE, 1)
-            + pynutil.delete('"')
+            pynutil.delete('default_ordinal: "') + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete('"')
         ).optimize()
 
         opt_space = pynini.closure(pynutil.delete(" "), 0, 1)
 
         drop_preserve_order = pynini.closure(
-            opt_space + pynutil.delete("preserve_order:") + opt_space + pynutil.delete("true") + opt_space,
-            0, 1
+            opt_space + pynutil.delete("preserve_order:") + opt_space + pynutil.delete("true") + opt_space, 0, 1
         ).optimize()
 
         key_first = (
-            drop_preserve_order
-            + key_cardinal
-            + opt_space
-            + insert_space
-            + integer
-            + drop_preserve_order
+            drop_preserve_order + key_cardinal + opt_space + insert_space + integer + drop_preserve_order
         ).optimize()
 
         numeral_first = (
-            drop_preserve_order
-            + integer
-            + opt_space
-            + insert_space
-            + key_cardinal
-            + drop_preserve_order
+            drop_preserve_order + integer + opt_space + insert_space + key_cardinal + drop_preserve_order
         ).optimize()
 
         ignore_integer = (
-            pynutil.delete('integer: "') 
-            + pynutil.delete(pynini.closure(NEMO_NOT_QUOTE, 1)) 
-            + pynutil.delete('"')
+            pynutil.delete('integer: "') + pynutil.delete(pynini.closure(NEMO_NOT_QUOTE, 1)) + pynutil.delete('"')
         ).optimize()
 
         glued_ordinal = (
@@ -97,10 +70,7 @@ class RomanFst(GraphFst):
             + ignore_integer
             + opt_space
             + default_ordinal
-            + pynini.closure(
-                opt_space + insert_space + key_cardinal,
-                0, 1
-            )
+            + pynini.closure(opt_space + insert_space + key_cardinal, 0, 1)
             + drop_preserve_order
         ).optimize()
 

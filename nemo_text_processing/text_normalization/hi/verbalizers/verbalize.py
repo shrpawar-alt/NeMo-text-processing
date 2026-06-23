@@ -89,7 +89,6 @@ class VerbalizeFst(GraphFst):
             | telephone_graph
             | electronic_graph
             | roman_graph
-
         )
 
         self.fst = graph

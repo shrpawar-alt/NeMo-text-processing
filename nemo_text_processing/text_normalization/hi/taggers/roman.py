@@ -15,11 +15,7 @@
 import pynini
 from pynini.lib import pynutil
 
-from nemo_text_processing.text_normalization.hi.graph_utils import (
-    GraphFst,
-    convert_space,
-    insert_space,
-)
+from nemo_text_processing.text_normalization.hi.graph_utils import GraphFst, convert_space, insert_space
 from nemo_text_processing.text_normalization.hi.utils import get_abs_path, load_labels
 
 
@@ -39,9 +35,7 @@ class RomanFst(GraphFst):
     def __init__(self, deterministic: bool = True):
         super().__init__(name="roman", kind="classify", deterministic=deterministic)
 
-        roman_graph = pynini.string_file(
-            get_abs_path("data/roman/roman_to_spoken.tsv")
-        ).optimize()
+        roman_graph = pynini.string_file(get_abs_path("data/roman/roman_to_spoken.tsv")).optimize()
         roman_numeral_only = pynini.project(roman_graph, "input").optimize()
 
         devanagari_chars = pynini.project(
@@ -51,8 +45,7 @@ class RomanFst(GraphFst):
         devanagari_word = pynini.closure(devanagari_chars, 1).optimize()
 
         devanagari_phrase = (
-            devanagari_word
-            + pynini.closure((pynini.accep(" ") | pynini.accep("-")) + devanagari_word)
+            devanagari_word + pynini.closure((pynini.accep(" ") | pynini.accep("-")) + devanagari_word)
         ).optimize()
 
         separator = (pynini.accep("-") | pynini.accep(" ")).optimize()
@@ -105,13 +98,13 @@ class RomanFst(GraphFst):
         regular_row_graphs = []
         for numeral, spoken in roman_rows:
             for row in suffix_rows_raw:
-        
+
                 suffix_input = row[0]
                 suffix_output = row[1] if len(row) > 1 else row[0]
 
                 fused = numeral + suffix_input
                 if fused in exception_fused_set:
-                    continue  
+                    continue
                 spoken_ordinal = spoken + suffix_output
                 regular_row_graphs.append(
                     pynutil.insert('integer: "' + numeral + '"')
@@ -140,8 +133,6 @@ class RomanFst(GraphFst):
             )
         ).optimize()
 
-        graph = pynini.union(
-            key_before_numeral, numeral_before_key, roman_glued_ordinal
-        ).optimize()
+        graph = pynini.union(key_before_numeral, numeral_before_key, roman_glued_ordinal).optimize()
 
         self.fst = self.add_tokens(graph).optimize()
