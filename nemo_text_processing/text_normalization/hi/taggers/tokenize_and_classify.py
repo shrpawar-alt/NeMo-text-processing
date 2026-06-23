@@ -35,6 +35,7 @@ from nemo_text_processing.text_normalization.hi.taggers.measure import MeasureFs
 from nemo_text_processing.text_normalization.hi.taggers.money import MoneyFst
 from nemo_text_processing.text_normalization.hi.taggers.ordinal import OrdinalFst
 from nemo_text_processing.text_normalization.hi.taggers.punctuation import PunctuationFst
+from nemo_text_processing.text_normalization.hi.taggers.roman import RomanFst
 from nemo_text_processing.text_normalization.hi.taggers.serial import SerialFst
 from nemo_text_processing.text_normalization.hi.taggers.telephone import TelephoneFst
 from nemo_text_processing.text_normalization.hi.taggers.time import TimeFst
@@ -114,6 +115,9 @@ class ClassifyFst(GraphFst):
 
             word = WordFst(punctuation=punctuation, deterministic=deterministic)
             word_graph = word.fst
+            
+            roman = RomanFst(deterministic=deterministic)
+            roman_graph = roman.fst
 
             telephone = TelephoneFst()
             telephone_graph = telephone.fst
@@ -137,6 +141,8 @@ class ClassifyFst(GraphFst):
                 | pynutil.add_weight(ordinal_graph, 1.1)
                 | pynutil.add_weight(electronic_graph, 1.1)
                 | pynutil.add_weight(serial_graph, 1.11)
+                | pynutil.add_weight(roman_graph, -5.0)
+
             )
 
             punct = pynutil.insert("tokens { ") + pynutil.add_weight(punct_graph, weight=2.1) + pynutil.insert(" }")
