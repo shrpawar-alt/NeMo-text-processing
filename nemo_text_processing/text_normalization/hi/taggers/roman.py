@@ -45,7 +45,7 @@ class RomanFst(GraphFst):
         roman_numeral_only = pynini.project(roman_graph, "input").optimize()
 
         devanagari_chars = pynini.project(
-            pynini.string_file(get_abs_path("data/roman/chars.tsv")), "input"
+            pynini.string_file(get_abs_path("data/serial/chars.tsv")), "input"
         ).optimize()
 
         devanagari_word = pynini.closure(devanagari_chars, 1).optimize()
