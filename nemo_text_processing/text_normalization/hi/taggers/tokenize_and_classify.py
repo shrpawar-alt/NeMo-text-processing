@@ -141,7 +141,8 @@ class ClassifyFst(GraphFst):
                 | pynutil.add_weight(ordinal_graph, 1.1)
                 | pynutil.add_weight(electronic_graph, 1.1)
                 | pynutil.add_weight(serial_graph, 1.11)
-                | pynutil.add_weight(roman_graph, -5.0)
+                | pynutil.add_weight(roman_graph, 1.1)
+
             )
 
             punct = pynutil.insert("tokens { ") + pynutil.add_weight(punct_graph, weight=2.1) + pynutil.insert(" }")

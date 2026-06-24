@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2026, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,10 +34,3 @@ class TestRoman:
     def test_norm(self, test_input, expected):
         pred = self.normalizer.normalize(test_input, verbose=False)
         assert pred.strip() == expected.strip()
-
-    # @parameterized.expand(parse_test_case_file('hi/data_inverse_text_normalization/test_cases_roman.txt'))
-    # @pytest.mark.run_only_on('CPU')
-    # @pytest.mark.unit
-    # def test_denorm(self, test_input, expected):
-    #     pred = self.inverse_normalizer.inverse_normalize(test_input, verbose=False)
-    #     assert pred == expected
