@@ -18,8 +18,8 @@ from pynini.lib import pynutil
 from nemo_text_processing.text_normalization.hi.graph_utils import (
     NEMO_NOT_QUOTE,
     GraphFst,
-    insert_space,
     delete_zero_or_one_space,
+    insert_space,
 )
 from nemo_text_processing.text_normalization.hi.utils import get_abs_path
 
@@ -53,14 +53,17 @@ class RomanFst(GraphFst):
         ).optimize()
 
         ignore_integer = (
-            pynutil.delete('integer: "') 
-            + pynutil.delete(pynini.closure(NEMO_NOT_QUOTE, 1)) 
-            + pynutil.delete('"')
+            pynutil.delete('integer: "') + pynutil.delete(pynini.closure(NEMO_NOT_QUOTE, 1)) + pynutil.delete('"')
         ).optimize()
 
         drop_preserve_order = pynini.closure(
-            delete_zero_or_one_space + pynutil.delete("preserve_order:") + delete_zero_or_one_space + pynutil.delete("true") + delete_zero_or_one_space,
-            0, 1
+            delete_zero_or_one_space
+            + pynutil.delete("preserve_order:")
+            + delete_zero_or_one_space
+            + pynutil.delete("true")
+            + delete_zero_or_one_space,
+            0,
+            1,
         ).optimize()
 
         key_first = (
@@ -86,10 +89,7 @@ class RomanFst(GraphFst):
             + ignore_integer
             + delete_zero_or_one_space
             + default_ordinal
-            + pynini.closure(
-                delete_zero_or_one_space + insert_space + key_cardinal,
-                0, 1
-            )
+            + pynini.closure(delete_zero_or_one_space + insert_space + key_cardinal, 0, 1)
             + drop_preserve_order
         ).optimize()
 
