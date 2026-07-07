@@ -38,7 +38,7 @@ TA_ONRARAI = "ஒன்றரை"  # 1.5
 TA_IRANDARAI = "இரண்டரை"  # 2.5
 TA_ONRUKAAL = "ஒன்றுகால்"  # quarter more (1.25)
 TA_ARAI = "அரை"  # half more (X.5)
-TA_MUKKAAL = "முக்கால்"   # quarter less (0.75)
+TA_MUKKAAL = "முக்கால்"  # quarter less (0.75)
 
 # Tamil decimal representations
 TA_POINT_FIVE = ".௫"  # .5
