@@ -155,18 +155,28 @@ class MeasureFst(GraphFst):
             | pynutil.add_weight(num_1digit,  0.0)
         ).optimize()
 
+        digit_run_4_plus = pynini.compose(
+            single_digit_input ** 4 + pynini.closure(single_digit_input),
+            digit_run
+        ).optimize()
+
+        any_street_num = (
+            num_as_cardinal 
+            | pynutil.add_weight(digit_run_4_plus, -5.0)
+        ).optimize()
+
         hyphen_word = pynini.cross(HYPHEN, "हाइफ़न")
         hyphenated_num = (
-            num_as_cardinal
+            any_street_num
             + insert_space + hyphen_word
-            + insert_space + num_as_cardinal
+            + insert_space + any_street_num
         ).optimize()
 
         slash_word = pynini.cross(SLASH, "बटा")
         slashed_num = (
-            num_as_cardinal
+            any_street_num
             + insert_space + slash_word
-            + insert_space + num_as_cardinal
+            + insert_space + any_street_num
         ).optimize()
 
         pincode = pynini.compose(
@@ -200,10 +210,22 @@ class MeasureFst(GraphFst):
             insert_space + pynini.compose(single_letter, letter_to_word), 0.5
         )
 
+        special_chars = pynini.union(HYPHEN, SLASH).optimize()
+        convertible_char = pynini.union(single_digit_input, special_chars, single_letter)
+        non_space_char = pynini.difference(
+            NEMO_CHAR,
+            pynini.union(NEMO_WHITE_SPACE, convertible_char, pynini.accep(COMMA))
+        ).optimize()
+
+        right_side_letter = (
+            pynini.compose(single_letter, letter_to_word) 
+            | pynini.closure(non_space_char, 1)
+        ).optimize()
+
         slashed_num_letter = (
-            digit_run
+            any_street_num
             + insert_space + slash_word
-            + insert_space + pynini.compose(single_letter, letter_to_word)
+            + insert_space + right_side_letter
         ).optimize()
 
         slashed_num = (slashed_num | slashed_num_letter).optimize()
@@ -212,12 +234,6 @@ class MeasureFst(GraphFst):
 
         standalone_hyphen = pynutil.add_weight(pynini.cross(HYPHEN, "हाइफ़न"), 0.2)
 
-        special_chars = pynini.union(HYPHEN, SLASH).optimize()
-        convertible_char = pynini.union(single_digit_input, special_chars, single_letter)
-        non_space_char = pynini.difference(
-            NEMO_CHAR,
-            pynini.union(NEMO_WHITE_SPACE, convertible_char, pynini.accep(COMMA))
-        ).optimize()
         other_word_processor = pynutil.add_weight(
             insert_space + pynini.closure(non_space_char, 1), 0.1
         )
