@@ -277,7 +277,7 @@ class MeasureFst(GraphFst):
         non_boundary_char = pynini.difference(NEMO_CHAR, word_boundary)
         word = pynini.closure(non_boundary_char, 1).optimize()
         word_with_boundary = word + pynini.closure(word_boundary)
-        window = pynini.closure(word_with_boundary, 0, 6).optimize()
+        window = pynini.closure(word_with_boundary, 0, 5).optimize()
         boundary = pynini.closure(word_boundary, 1).optimize()
 
         input_pattern = pynini.union(
