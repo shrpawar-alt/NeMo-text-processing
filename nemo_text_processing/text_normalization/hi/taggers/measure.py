@@ -120,7 +120,7 @@ class MeasureFst(GraphFst):
         Address tagger with natural Hindi verbalization for street numbers.
         1-3 digit numbers are verbalized as cardinals, 4+ digit numbers and
         PIN codes as digit-by-digit.
- 
+
         Examples:
             "७०० ओक स्ट्रीट"  -> "सात सौ ओक स्ट्रीट"
             "६६-४ पार्क रोड"  -> "छियासठ हाइफ़न चार पार्क रोड"
@@ -129,72 +129,41 @@ class MeasureFst(GraphFst):
         single_digit_word = (cardinal.digit | cardinal.zero).optimize()
         single_digit_input = NEMO_ALL_DIGIT
 
-        digit_run = (
-            single_digit_word
-            + pynini.closure(insert_space + single_digit_word)
-        ).optimize()
+        digit_run = (single_digit_word + pynini.closure(insert_space + single_digit_word)).optimize()
 
-        num_1digit = pynini.compose(
-            single_digit_input ** 1,
-            (cardinal.digit | cardinal.zero)
-        ).optimize()
+        num_1digit = pynini.compose(single_digit_input**1, (cardinal.digit | cardinal.zero)).optimize()
 
-        num_2digit = pynini.compose(
-            single_digit_input ** 2,
-            cardinal.teens_and_ties
-        ).optimize()
+        num_2digit = pynini.compose(single_digit_input**2, cardinal.teens_and_ties).optimize()
 
-        num_3digit = pynini.compose(
-            single_digit_input ** 3,
-            cardinal.graph_hundreds
-        ).optimize()
+        num_3digit = pynini.compose(single_digit_input**3, cardinal.graph_hundreds).optimize()
 
         num_as_cardinal = (
-            pynutil.add_weight(num_3digit,  -2.0)
+            pynutil.add_weight(num_3digit, -2.0)
             | pynutil.add_weight(num_2digit, -1.0)
-            | pynutil.add_weight(num_1digit,  0.0)
+            | pynutil.add_weight(num_1digit, 0.0)
         ).optimize()
 
         digit_run_4_plus = pynini.compose(
-            single_digit_input ** 4 + pynini.closure(single_digit_input),
-            digit_run
+            single_digit_input**4 + pynini.closure(single_digit_input), digit_run
         ).optimize()
 
-        any_street_num = (
-            num_as_cardinal 
-            | pynutil.add_weight(digit_run_4_plus, -5.0)
-        ).optimize()
+        any_street_num = (num_as_cardinal | pynutil.add_weight(digit_run_4_plus, -5.0)).optimize()
 
         hyphen_word = pynini.cross(HYPHEN, "हाइफ़न")
-        hyphenated_num = (
-            any_street_num
-            + insert_space + hyphen_word
-            + insert_space + any_street_num
-        ).optimize()
+        hyphenated_num = (any_street_num + insert_space + hyphen_word + insert_space + any_street_num).optimize()
 
         slash_word = pynini.cross(SLASH, "बटा")
-        slashed_num = (
-            any_street_num
-            + insert_space + slash_word
-            + insert_space + any_street_num
-        ).optimize()
+        slashed_num = (any_street_num + insert_space + slash_word + insert_space + any_street_num).optimize()
 
         pincode = pynini.compose(
-            single_digit_input ** 6,
-            single_digit_word + pynini.closure(insert_space + single_digit_word, 5, 5)
+            single_digit_input**6, single_digit_word + pynini.closure(insert_space + single_digit_word, 5, 5)
         ).optimize()
 
         street_num_1_to_3 = num_as_cardinal
 
-        street_num_4_digit = pynini.compose(
-            single_digit_input ** 4,
-            digit_run
-        ).optimize()
+        street_num_4_digit = pynini.compose(single_digit_input**4, digit_run).optimize()
 
-        street_num_5_digit = pynini.compose(
-            single_digit_input ** 5,
-            digit_run
-        ).optimize()
+        street_num_5_digit = pynini.compose(single_digit_input**5, digit_run).optimize()
 
         ordinal_processor = pynutil.add_weight(insert_space + ordinal.graph, -5.0)
 
@@ -206,27 +175,19 @@ class MeasureFst(GraphFst):
         letter_to_word = pynini.string_file(get_abs_path("data/address/letters.tsv"))
         letter_to_word = capitalized_input_graph(letter_to_word)
         single_letter = pynini.project(letter_to_word, "input").optimize()
-        letter_processor = pynutil.add_weight(
-            insert_space + pynini.compose(single_letter, letter_to_word), 0.5
-        )
+        letter_processor = pynutil.add_weight(insert_space + pynini.compose(single_letter, letter_to_word), 0.5)
 
         special_chars = pynini.union(HYPHEN, SLASH).optimize()
         convertible_char = pynini.union(single_digit_input, special_chars, single_letter)
         non_space_char = pynini.difference(
-            NEMO_CHAR,
-            pynini.union(NEMO_WHITE_SPACE, convertible_char, pynini.accep(COMMA))
+            NEMO_CHAR, pynini.union(NEMO_WHITE_SPACE, convertible_char, pynini.accep(COMMA))
         ).optimize()
 
         right_side_letter = (
-            pynini.compose(single_letter, letter_to_word) 
-            | pynini.closure(non_space_char, 1)
+            pynini.compose(single_letter, letter_to_word) | pynini.closure(non_space_char, 1)
         ).optimize()
 
-        slashed_num_letter = (
-            any_street_num
-            + insert_space + slash_word
-            + insert_space + right_side_letter
-        ).optimize()
+        slashed_num_letter = (any_street_num + insert_space + slash_word + insert_space + right_side_letter).optimize()
 
         slashed_num = (slashed_num | slashed_num_letter).optimize()
 
@@ -234,23 +195,21 @@ class MeasureFst(GraphFst):
 
         standalone_hyphen = pynutil.add_weight(pynini.cross(HYPHEN, "हाइफ़न"), 0.2)
 
-        other_word_processor = pynutil.add_weight(
-            insert_space + pynini.closure(non_space_char, 1), 0.1
-        )
+        other_word_processor = pynutil.add_weight(insert_space + pynini.closure(non_space_char, 1), 0.1)
 
         token_processor = (
             ordinal_processor
             | english_word_processor
-            | pynutil.add_weight(insert_space + hyphenated_num,     -4.0)
-            | pynutil.add_weight(insert_space + slashed_num,        -4.0)
-            | pynutil.add_weight(insert_space + pincode,            -5.0)
+            | pynutil.add_weight(insert_space + hyphenated_num, -4.0)
+            | pynutil.add_weight(insert_space + slashed_num, -4.0)
+            | pynutil.add_weight(insert_space + pincode, -5.0)
             | pynutil.add_weight(insert_space + street_num_5_digit, -3.5)
             | pynutil.add_weight(insert_space + street_num_4_digit, -3.5)
-            | pynutil.add_weight(insert_space + street_num_1_to_3,  0.0)
+            | pynutil.add_weight(insert_space + street_num_1_to_3, 0.0)
             | letter_processor
             | pynini.accep(NEMO_SPACE)
             | comma_processor
-            | pynutil.add_weight(insert_space + standalone_hyphen,  0.2)
+            | pynutil.add_weight(insert_space + standalone_hyphen, 0.2)
             | other_word_processor
         ).optimize()
 
@@ -264,9 +223,7 @@ class MeasureFst(GraphFst):
             pynini.project(states_graph, "input"),
             pynini.project(cities_graph, "input"),
         ).optimize()
-        address_keywords = pynini.union(
-            address_keywords_hi, address_keywords_en, state_city_keywords
-        )
+        address_keywords = pynini.union(address_keywords_hi, address_keywords_en, state_city_keywords)
 
         word_boundary = pynini.union(
             NEMO_WHITE_SPACE,
