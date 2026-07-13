@@ -126,6 +126,7 @@ class MeasureFst(GraphFst):
             "६६-४ पार्क रोड"  -> "छियासठ हाइफ़न चार पार्क रोड"
             "14/3 मथुरा रोड"  -> "चौदह बटा तीन मथुरा रोड"
         """
+        special_char_map = pynini.string_file(get_abs_path("data/address/special_characters.tsv"))
         single_digit_word = (cardinal.digit | cardinal.zero).optimize()
         single_digit_input = NEMO_ALL_DIGIT
 
@@ -149,10 +150,10 @@ class MeasureFst(GraphFst):
 
         any_street_num = (num_as_cardinal | pynutil.add_weight(digit_run_4_plus, -5.0)).optimize()
 
-        hyphen_word = pynini.cross(HYPHEN, "हाइफ़न")
+        hyphen_word = pynini.compose(pynini.accep(HYPHEN), special_char_map)
         hyphenated_num = (any_street_num + insert_space + hyphen_word + insert_space + any_street_num).optimize()
 
-        slash_word = pynini.cross(SLASH, "बटा")
+        slash_word = pynini.compose(pynini.accep(SLASH), special_char_map)
         slashed_num = (any_street_num + insert_space + slash_word + insert_space + any_street_num).optimize()
 
         pincode = pynini.compose(
@@ -170,7 +171,7 @@ class MeasureFst(GraphFst):
         en_to_hi_map = pynini.string_file(get_abs_path("data/address/en_to_hi_mapping.tsv"))
         if input_case != INPUT_LOWER_CASED:
             en_to_hi_map = capitalized_input_graph(en_to_hi_map)
-        english_word_processor = pynutil.add_weight(insert_space + en_to_hi_map, -3.0)
+        english_word_processor = pynutil.add_weight(insert_space + en_to_hi_map, -1.0)
 
         letter_to_word = pynini.string_file(get_abs_path("data/address/letters.tsv"))
         letter_to_word = capitalized_input_graph(letter_to_word)
@@ -193,7 +194,7 @@ class MeasureFst(GraphFst):
 
         comma_processor = pynutil.add_weight(delete_space + pynini.accep(COMMA), 0.0)
 
-        standalone_hyphen = pynutil.add_weight(pynini.cross(HYPHEN, "हाइफ़न"), 0.2)
+        standalone_hyphen = pynutil.add_weight(pynini.compose(pynini.accep(HYPHEN), special_char_map), 0.2)
 
         other_word_processor = pynutil.add_weight(insert_space + pynini.closure(non_space_char, 1), 0.1)
 
