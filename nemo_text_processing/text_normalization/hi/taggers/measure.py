@@ -98,7 +98,7 @@ class MeasureFst(GraphFst):
         # Street number (1-4 digits)
         street_num = (num_token + pynini.closure(insert_space + num_token, 0, 3)).optimize()
 
-        # Text: words with trailing separator 
+        # Text: words with trailing separator
         any_digit = pynini.union(NEMO_HI_DIGIT, NEMO_DIGIT).optimize()
         punctuation = pynini.union(COMMA, PERIOD, HI_PERIOD).optimize()
         word_char = pynini.difference(NEMO_NOT_SPACE, pynini.union(any_digit, punctuation)).optimize()
@@ -204,9 +204,7 @@ class MeasureFst(GraphFst):
             pynini.compose(single_letter, letter_to_word) | pynini.closure(non_space_char, 1)
         ).optimize()
         slash_word = pynini.compose(pynini.accep(SLASH), special_char_map)
-        slashed_num_letter = (
-            any_street_num + insert_space + slash_word + insert_space + right_side_letter
-        ).optimize()
+        slashed_num_letter = (any_street_num + insert_space + slash_word + insert_space + right_side_letter).optimize()
 
         comma_processor = pynutil.add_weight(delete_space + pynini.accep(COMMA), 0.0)
 
