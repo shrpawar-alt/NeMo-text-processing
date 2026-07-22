@@ -221,7 +221,7 @@ class MeasureFst(GraphFst):
             | other_word_processor
         ).optimize()
 
-       # Forbids two numeric tokens back-to-back, so a digit run is always one maximal match. 
+        # Forbids two numeric tokens back-to-back, so a digit run is always one maximal match.
         full_string_processor = (
             pynini.closure(non_numeric_token | (numeric_token + pynini.closure(non_numeric_token, 1)))
             + pynini.closure(numeric_token, 0, 1)
