@@ -240,7 +240,7 @@ class MeasureFst(GraphFst):
         word_boundary = pynini.union(
             NEMO_WHITE_SPACE, pynini.accep(COMMA), pynini.accep(HI_PERIOD), pynini.accep(PERIOD)
         ).optimize()
-        
+
         # Unbounded sigma closure for efficient context matching around address keywords.
         sigma_star = pynini.closure(NEMO_CHAR)
         left_context = pynini.closure(sigma_star + word_boundary, 0, 1)
