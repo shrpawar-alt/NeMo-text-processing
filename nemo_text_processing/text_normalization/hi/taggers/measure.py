@@ -107,7 +107,9 @@ class MeasureFst(GraphFst):
         # Separator: optional comma followed by mandatory space
         sep = pynini.closure(pynini.accep(COMMA), 0, 1) + pynini.accep(NEMO_SPACE)
         word_with_sep = word + sep
-        text = pynini.closure(word_with_sep, 0, 5).optimize()
+
+        # Unbounded word closure preceding state/city to optimize FST compilation size.
+        text = pynini.closure(word_with_sep).optimize()
 
         # Pattern: [street_num + sep]? text state/city [space pincode]
         pattern = (
@@ -238,15 +240,12 @@ class MeasureFst(GraphFst):
         word_boundary = pynini.union(
             NEMO_WHITE_SPACE, pynini.accep(COMMA), pynini.accep(HI_PERIOD), pynini.accep(PERIOD)
         ).optimize()
-        non_boundary_char = pynini.difference(NEMO_CHAR, word_boundary)
-        word = pynini.closure(non_boundary_char, 1).optimize()
-        word_with_boundary = word + pynini.closure(word_boundary)
-        window = pynini.closure(word_with_boundary, 0, 5).optimize()
-        boundary = pynini.closure(word_boundary, 1).optimize()
-        input_pattern = pynini.union(
-            address_keywords + boundary + window,
-            window + boundary + address_keywords + pynini.closure(boundary + window, 0, 1),
-        ).optimize()
+        
+        # Unbounded sigma closure for efficient context matching around address keywords.
+        sigma_star = pynini.closure(NEMO_CHAR)
+        left_context = pynini.closure(sigma_star + word_boundary, 0, 1)
+        right_context = pynini.closure(word_boundary + sigma_star, 0, 1)
+        input_pattern = (left_context + address_keywords + right_context).optimize()
         address_graph = pynini.compose(input_pattern, full_string_processor).optimize()
         graph = (
             pynutil.insert('units: "address" cardinal { integer: "')
