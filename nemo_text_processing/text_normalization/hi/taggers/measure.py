@@ -122,8 +122,7 @@ class MeasureFst(GraphFst):
             + pattern
             + pynutil.insert('" } preserve_order: true')
         )
-        # Weight kept above get_address_graph so address graph takes
-        # priority when both can match.
+        # Weight kept above get_address_graph so address graph takes priority when both can match.
         return pynutil.add_weight(graph, 2.0).optimize()
 
     def get_address_graph(
@@ -168,18 +167,13 @@ class MeasureFst(GraphFst):
 
         any_street_num = (num_as_cardinal | pynutil.add_weight(digit_run_4_plus, -0.5)).optimize()
 
-        # Hyphen and slash separators are structurally identical once mapped
-        # through special_characters.tsv, so one rule covers "X-Y" and "X/Y".
-        separator_word = pynini.compose(pynini.union(pynini.accep(HYPHEN), pynini.accep(SLASH)), special_char_map)
-        joined_num = (any_street_num + insert_space + separator_word + insert_space + any_street_num).optimize()
+        # Only slash joins two numbers into one token; hyphen is handled by standalone_hyphen.
+        slash_separator = pynini.compose(pynini.accep(SLASH), special_char_map)
+        joined_num = (any_street_num + insert_space + slash_separator + insert_space + any_street_num).optimize()
 
-        pincode = pynini.compose(
-            single_digit_input**6, single_digit_word + pynini.closure(insert_space + single_digit_word, 5, 5)
-        ).optimize()
-
+        # Digit run maps to one token by length: 1-3 digits -> cardinal, 4+ -> digit-by-digit (covers PIN codes too).
         street_num_1_to_3 = num_as_cardinal
-        street_num_4_digit = pynini.compose(single_digit_input**4, digit_run).optimize()
-        street_num_5_digit = pynini.compose(single_digit_input**5, digit_run).optimize()
+        street_num_4_plus = digit_run_4_plus
 
         ordinal_processor = pynutil.add_weight(insert_space + ordinal.graph, MIN_NEG_WEIGHT * 5)
 
@@ -198,8 +192,7 @@ class MeasureFst(GraphFst):
             NEMO_CHAR, pynini.union(NEMO_WHITE_SPACE, convertible_char, pynini.accep(COMMA))
         ).optimize()
 
-        # A letter right after a slash (e.g. "12/A") needs its own rule since
-        # the right side isn't a number.
+        # Letter right after a slash (e.g. "12/A").
         right_side_letter = (
             pynini.compose(single_letter, letter_to_word) | pynini.closure(non_space_char, 1)
         ).optimize()
@@ -209,27 +202,30 @@ class MeasureFst(GraphFst):
         comma_processor = pynutil.add_weight(delete_space + pynini.accep(COMMA), 0.0)
 
         hyphen_word = pynini.compose(pynini.accep(HYPHEN), special_char_map)
-        standalone_hyphen = pynutil.add_weight(hyphen_word, 0.2)
+        standalone_hyphen = hyphen_word
 
         other_word_processor = pynutil.add_weight(insert_space + pynini.closure(non_space_char, 1), 0.1)
 
-        token_processor = (
+        # Kept separate so full_string_processor can forbid two in a row.
+        numeric_token = ((insert_space + street_num_1_to_3) | (insert_space + street_num_4_plus)).optimize()
+
+        non_numeric_token = (
             ordinal_processor
             | english_word_processor
-            | pynutil.add_weight(insert_space + joined_num, -0.5)
-            | pynutil.add_weight(insert_space + slashed_num_letter, -0.5)
-            | pynutil.add_weight(insert_space + pincode, -0.9)
-            | pynutil.add_weight(insert_space + street_num_5_digit, -0.7)
-            | pynutil.add_weight(insert_space + street_num_4_digit, -0.5)
-            | pynutil.add_weight(insert_space + street_num_1_to_3, 0.0)
+            | (insert_space + joined_num)
+            | (insert_space + slashed_num_letter)
             | letter_processor
             | pynini.accep(NEMO_SPACE)
             | comma_processor
-            | pynutil.add_weight(insert_space + standalone_hyphen, 0.2)
+            | (insert_space + standalone_hyphen)
             | other_word_processor
         ).optimize()
 
-        full_string_processor = pynini.closure(token_processor, 1).optimize()
+       # Forbids two numeric tokens back-to-back, so a digit run is always one maximal match. 
+        full_string_processor = (
+            pynini.closure(non_numeric_token | (numeric_token + pynini.closure(non_numeric_token, 1)))
+            + pynini.closure(numeric_token, 0, 1)
+        ).optimize()
 
         # Window-based context matching around address keywords for robust detection
         address_keywords_en = pynini.project(en_to_hi_map, "input")
