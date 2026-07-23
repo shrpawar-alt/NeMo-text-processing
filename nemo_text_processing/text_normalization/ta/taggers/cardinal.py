@@ -43,12 +43,14 @@ class CardinalFst(GraphFst):
 
         # digit_oru == digit except "1" takes its prefixing form ஒரு (before scale units)
         one_oru = pynini.cross("1", "ஒரு") | pynini.cross("௧", "ஒரு")
-        digit_oru = (one_oru | pynini.compose(pynini.difference(NEMO_ALL_DIGIT, pynini.union("1", "௧")), digit)).optimize()
+        digit_oru = (
+            one_oru | pynini.compose(pynini.difference(NEMO_ALL_DIGIT, pynini.union("1", "௧")), digit)
+        ).optimize()
 
         # single hundreds table: absolute forms (நூறு) are keyed by "X00",
         # combining forms (நூற்று) by "X"; split them apart by input length.
         hundred = sf("hundred_ta")
-        hundred_ta = pynini.compose(NEMO_ALL_DIGIT ** 3, hundred).optimize()
+        hundred_ta = pynini.compose(NEMO_ALL_DIGIT**3, hundred).optimize()
         hundred_prefix = pynini.compose(NEMO_ALL_DIGIT, hundred).optimize()
 
         # ஆயிரம் (exact) and ஆயிரத்து (combining) share the same stem
@@ -67,7 +69,7 @@ class CardinalFst(GraphFst):
 
         def zdel(k):
             # NOTE: pynini treats ``fst ** 0`` as Kleene-star, so guard the 0 case.
-            return zero_del ** k if k > 0 else pynini.accep("")
+            return zero_del**k if k > 0 else pynini.accep("")
 
         def scale(head_exact, head_tail, n, tails):
             """One magnitude band: exact multiple + every remainder combination.
@@ -90,7 +92,9 @@ class CardinalFst(GraphFst):
         self.graph_hundreds = graph_hundreds
 
         # THOUSANDS (1000-9999): ஆயிரம் / ஆயிரத்து forms
-        graph_thousands = scale(thousand_exact + zdel(3), thousand_prefix, 3, [single_digit, teens_ties, graph_hundreds])
+        graph_thousands = scale(
+            thousand_exact + zdel(3), thousand_prefix, 3, [single_digit, teens_ties, graph_hundreds]
+        )
         self.graph_thousands = graph_thousands
 
         # ladder of remainder fillers, smallest magnitude first
@@ -110,18 +114,18 @@ class CardinalFst(GraphFst):
 
         # CRORES and higher (10^7 .. 10^15): stem + கோடி
         crore_bases = [
-            digit_oru,            # crores
-            teens_and_ties,       # ten-crores
-            graph_hundreds,       # hundreds of crores
-            graph_thousands,      # thousands of crores
+            digit_oru,  # crores
+            teens_and_ties,  # ten-crores
+            graph_hundreds,  # hundreds of crores
+            graph_thousands,  # thousands of crores
             graph_ten_thousands,  # ten-thousands of crores
-            graph_lakhs,          # lakhs of crores
-            graph_ten_lakhs,      # ten-lakhs of crores
+            graph_lakhs,  # lakhs of crores
+            graph_ten_lakhs,  # ten-lakhs of crores
         ]
         crore_graphs = [band(b, " கோடி", " கோடியே", 7, tails) for b in crore_bases]
         graph_crores, graph_ten_crores = crore_graphs[0], crore_graphs[1]
         crore_graphs += [
-            band(graph_crores, " கோடி", " கோடியே", 7, tails),      # crores of crores
+            band(graph_crores, " கோடி", " கோடியே", 7, tails),  # crores of crores
             band(graph_ten_crores, " கோடி", " கோடியே", 7, tails),  # ten-crores of crores
         ]
 

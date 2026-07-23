@@ -76,9 +76,7 @@ class ClassifyFst(GraphFst):
             punctuation = PunctuationFst(deterministic=deterministic)
             punct_graph = punctuation.fst
 
-            classify = (
-                pynutil.add_weight(cardinal_graph, 1.1)
-            )
+            classify = pynutil.add_weight(cardinal_graph, 1.1)
 
             word_graph = WordFst(punctuation=punctuation, deterministic=deterministic).fst
 

@@ -15,6 +15,7 @@
 from nemo_text_processing.text_normalization.ta.graph_utils import GraphFst
 from nemo_text_processing.text_normalization.ta.verbalizers.cardinal import CardinalFst
 
+
 class VerbalizeFst(GraphFst):
     """
     Composes other verbalizer grammars.

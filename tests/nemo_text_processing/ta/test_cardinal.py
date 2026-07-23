@@ -17,11 +17,12 @@ from parameterized import parameterized
 from nemo_text_processing.text_normalization.normalize import Normalizer
 from ..utils import CACHE_DIR, parse_test_case_file
 
+
 class TestCardinal:
     normalizer = Normalizer(
         input_case='cased', lang='ta', cache_dir=CACHE_DIR, overwrite_cache=False, post_process=False
     )
-    
+
     @parameterized.expand(parse_test_case_file('ta/data_text_normalization/test_cases_cardinal.txt'))
     @pytest.mark.run_only_on('CPU')
     @pytest.mark.unit
