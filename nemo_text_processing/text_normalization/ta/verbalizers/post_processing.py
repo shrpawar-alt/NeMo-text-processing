@@ -14,7 +14,6 @@
 
 
 import os
-
 import pynini
 from pynini.lib import pynutil
 
@@ -69,7 +68,7 @@ class PostProcessingFst:
         allow_space_before_punct = quotes + dashes + brackets
 
         no_space_before_punct = [m for m in punct_marks_all if m not in allow_space_before_punct]
-        # Add Hindi-specific punctuation
+        # Add Tamil-specific punctuation
         no_space_before_punct.extend(["।", ",", ".", ";", ":", "!", "?"])
         # Remove duplicates
         no_space_before_punct = list(set(no_space_before_punct))
