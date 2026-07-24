@@ -67,14 +67,14 @@ class SerialFst(GraphFst):
 
         # Number-group sizing for codes: 1-3 digit groups are read as cardinals and 4+ digits are read as digit by digit
         digitwise_4plus = pynini.compose(
-            any_digit ** 4 + pynini.closure(any_digit), cardinal.single_digits_graph
+            any_digit**4 + pynini.closure(any_digit), cardinal.single_digits_graph
         ).optimize()
         num_graph = (limited_cardinal_graph | digitwise_4plus).optimize()
 
         symbols_graph = pynini.string_file(get_abs_path("data/serial/special_symbols.tsv")).optimize()
 
         devanagari_chars = pynini.string_file(get_abs_path("data/serial/chars.tsv")).optimize()
-        
+
         letter_graph = pynini.string_file(get_abs_path("data/address/letters.tsv"))
         letter_graph = (letter_graph | pynini.compose(TO_LOWER, letter_graph)).optimize()
         latin_letters = letter_graph + pynini.closure(pynutil.insert(" ") + letter_graph)
@@ -149,13 +149,7 @@ class SerialFst(GraphFst):
             + pynini.union(date_year_suffix, date_suffixes)
         )
 
-        exclusions = (
-            pure_word_slash
-            | pure_latin_word
-            | dimension_pattern
-            | ordinal_pattern
-            | date_pattern
-        )
+        exclusions = pure_word_slash | pure_latin_word | dimension_pattern | ordinal_pattern | date_pattern
         accepted_inputs = pynini.difference(NEMO_SIGMA, exclusions).optimize()
 
         serial_graph = pynini.compose(accepted_inputs, serial_graph).optimize()

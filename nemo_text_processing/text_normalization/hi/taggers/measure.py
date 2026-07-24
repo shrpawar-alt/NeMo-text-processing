@@ -98,9 +98,7 @@ class MeasureFst(GraphFst):
         pincode = (num_token + pynini.closure(insert_space + num_token, 5, 5)).optimize()
 
         # Street number: 1-3 digits read as cardinal, 4+ digits read digit-by-digit
-        num_1to3 = (
-            cardinal.digit | cardinal.zero | cardinal.teens_and_ties | cardinal.graph_hundreds
-        ).optimize()
+        num_1to3 = (cardinal.digit | cardinal.zero | cardinal.teens_and_ties | cardinal.graph_hundreds).optimize()
         num_4plus = (num_token + pynini.closure(insert_space + num_token, 3)).optimize()
         street_num = (num_1to3 | num_4plus).optimize()
 
@@ -135,7 +133,7 @@ class MeasureFst(GraphFst):
     def get_address_graph(self, cardinal: GraphFst, ordinal: GraphFst, input_case: str):
         """
         Address tagger that fires when address context keywords are present.
-        
+
         Examples:
             "७०० ओक स्ट्रीट" -> "सात सौ ओक स्ट्रीट"
             "६६-४ पार्क रोड" -> "छियासठ हाइफ़न चार पार्क रोड"
@@ -145,12 +143,7 @@ class MeasureFst(GraphFst):
         # Strip internal weights from ordinal graph so a small outer weight suffices
         ordinal_graph = pynini.arcmap(ordinal.graph, map_type="rmweight").optimize()
         # Alphanumeric to word mappings (digits, special characters, telephone digits)
-        char_to_word = (
-            digit
-            | zero
-            | special_characters_map
-            | telephone_number
-        ).optimize()
+        char_to_word = (digit | zero | special_characters_map | telephone_number).optimize()
         letter_to_word = capitalized_input_graph(letters_map)
         # Identity acceptor for keywords (Devanagari/English) to prevent unintended rewrites/transliteration
         address_keywords = pynini.project(
@@ -183,11 +176,9 @@ class MeasureFst(GraphFst):
         # --- Alphanumeric codes (letter+digit): letters -> Devanagari, digits via cross-class rule ---
         code_letter = pynini.compose(single_letter, letter_to_word).optimize()
         code_letters = code_letter + pynini.closure(insert_space + code_letter)
-        code_num_1to3 = (
-            cardinal.digit | cardinal.zero | cardinal.teens_and_ties | cardinal.graph_hundreds
-        ).optimize()
+        code_num_1to3 = (cardinal.digit | cardinal.zero | cardinal.teens_and_ties | cardinal.graph_hundreds).optimize()
         code_num_4plus = pynini.compose(
-            single_digit ** 4 + pynini.closure(single_digit), cardinal.single_digits_graph
+            single_digit**4 + pynini.closure(single_digit), cardinal.single_digits_graph
         ).optimize()
         code_num = (code_num_1to3 | code_num_4plus).optimize()
         code_seg = (code_letters | code_num).optimize()
@@ -211,7 +202,7 @@ class MeasureFst(GraphFst):
         code_transliterate = pynini.arcmap(code_transliterate, map_type="rmweight").optimize()
         code_processor = insert_space + code_transliterate
 
-        # Pure numeric runs: 1-3 digits read as cardinal, 4+ digits read digit-by-digit 
+        # Pure numeric runs: 1-3 digits read as cardinal, 4+ digits read digit-by-digit
         number_run = pynini.compose(pynini.closure(single_digit, 1), code_num).optimize()
         number_run_processor = pynutil.add_weight(insert_space + number_run, 0.5)
 

@@ -360,9 +360,7 @@ class CardinalFst(GraphFst):
             + three_digits
         )
         # International grouping: 1-3 leading digits, one or more groups of 3.
-        western_grouping = pynini.closure(NEMO_ALL_DIGIT, 1, 3) + pynini.closure(
-            delete_separator + three_digits, 1
-        )
+        western_grouping = pynini.closure(NEMO_ALL_DIGIT, 1, 3) + pynini.closure(delete_separator + three_digits, 1)
         strip_separators = (indian_grouping | western_grouping).optimize()
         cardinal_with_separators = pynini.compose(strip_separators, graph_without_leading_zeros).optimize()
 
