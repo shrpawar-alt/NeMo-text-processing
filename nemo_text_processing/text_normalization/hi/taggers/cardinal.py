@@ -348,8 +348,26 @@ class CardinalFst(GraphFst):
         )
         cardinal_with_leading_zeros = pynutil.add_weight(cardinal_with_leading_zeros, 0.5)
 
+        # Handle large numbers written with digit-group separators.
+        delete_separator = pynutil.delete(",")
+        two_digits = NEMO_ALL_DIGIT + NEMO_ALL_DIGIT
+        three_digits = NEMO_ALL_DIGIT + NEMO_ALL_DIGIT + NEMO_ALL_DIGIT
+        # Indian grouping: 1-2 leading digits, groups of 2, final group of 3.
+        indian_grouping = (
+            pynini.closure(NEMO_ALL_DIGIT, 1, 2)
+            + pynini.closure(delete_separator + two_digits)
+            + delete_separator
+            + three_digits
+        )
+        # International grouping: 1-3 leading digits, one or more groups of 3.
+        western_grouping = pynini.closure(NEMO_ALL_DIGIT, 1, 3) + pynini.closure(
+            delete_separator + three_digits, 1
+        )
+        strip_separators = (indian_grouping | western_grouping).optimize()
+        cardinal_with_separators = pynini.compose(strip_separators, graph_without_leading_zeros).optimize()
+
         # Full graph including leading zeros - for standalone cardinal matching
-        final_graph = graph_without_leading_zeros | cardinal_with_leading_zeros
+        final_graph = graph_without_leading_zeros | cardinal_with_leading_zeros | cardinal_with_separators
 
         optional_minus_graph = pynini.closure(pynutil.insert("negative: ") + pynini.cross("-", "\"true\" "), 0, 1)
 

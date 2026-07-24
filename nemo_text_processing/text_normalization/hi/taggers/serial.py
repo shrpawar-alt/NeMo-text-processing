@@ -20,6 +20,7 @@ from nemo_text_processing.text_normalization.hi.graph_utils import (
     NEMO_DIGIT,
     NEMO_NOT_SPACE,
     NEMO_SIGMA,
+    TO_LOWER,
     GraphFst,
     convert_space,
 )
@@ -38,9 +39,9 @@ class SerialFst(GraphFst):
         e.g. 2^2       -> tokens { name: "दो स्क्वेर्ड" }
         e.g. 2^4       -> tokens { name: "दो टु द पावर चार" }
         e.g. 1-800-555 -> tokens { name: "एक-आठ सौ-पाँच सौ पचपन" }
-
-    Note: Pure Latin-alpha + digit patterns (A12, B-60) are intentionally
-    excluded here so they fall through to the electronic classifier.
+        e.g. B-60      -> tokens { name: "बी-साठ" }
+        e.g. A12       -> tokens { name: "ए बारह" }
+        e.g. FY2024    -> tokens { name: "एफ वाई दो शून्य दो चार" }
     """
 
     def __init__(
@@ -63,13 +64,19 @@ class SerialFst(GraphFst):
         limited_cardinal_graph = (
             cardinal.digit | cardinal.zero | cardinal.teens_and_ties | cardinal.graph_hundreds
         ).optimize()
-        num_graph = limited_cardinal_graph
+
+        # Number-group sizing for codes: 1-3 digit groups are read as cardinals and 4+ digits are read as digit by digit
+        digitwise_4plus = pynini.compose(
+            any_digit ** 4 + pynini.closure(any_digit), cardinal.single_digits_graph
+        ).optimize()
+        num_graph = (limited_cardinal_graph | digitwise_4plus).optimize()
 
         symbols_graph = pynini.string_file(get_abs_path("data/serial/special_symbols.tsv")).optimize()
 
         devanagari_chars = pynini.string_file(get_abs_path("data/serial/chars.tsv")).optimize()
-
+        
         letter_graph = pynini.string_file(get_abs_path("data/address/letters.tsv"))
+        letter_graph = (letter_graph | pynini.compose(TO_LOWER, letter_graph)).optimize()
         latin_letters = letter_graph + pynini.closure(pynutil.insert(" ") + letter_graph)
         latin_letters = latin_letters.optimize()
 
@@ -110,13 +117,12 @@ class SerialFst(GraphFst):
 
         pure_word_slash = pynini.closure(NEMO_ALPHA, 1) + pynini.accep("/") + pynini.closure(NEMO_ALPHA, 1)
 
+        letter_join_char = NEMO_ALPHA | pynini.accep("-") | pynini.accep("/")
+        contains_latin_letter = pynini.closure(letter_join_char) + NEMO_ALPHA + pynini.closure(letter_join_char)
+        pure_latin_word = pynini.intersect(pynini.closure(letter_join_char, 1), contains_latin_letter).optimize()
+
         dimension_pattern = (
             pynini.closure(any_digit, 1) + (pynini.accep("x") | pynini.accep("X")) + pynini.closure(any_digit, 1)
-        )
-
-        _opt_delim = pynini.closure(pynini.accep("-") | pynini.accep(" "), 0, 1)
-        latin_alphanum = (pynini.closure(NEMO_ALPHA, 1) + _opt_delim + pynini.closure(any_digit, 1)) | (
-            pynini.closure(any_digit, 1) + _opt_delim + pynini.closure(NEMO_ALPHA, 1)
         )
 
         ordinal_suffixes = pynini.project(
@@ -143,7 +149,13 @@ class SerialFst(GraphFst):
             + pynini.union(date_year_suffix, date_suffixes)
         )
 
-        exclusions = pure_word_slash | dimension_pattern | latin_alphanum | ordinal_pattern | date_pattern
+        exclusions = (
+            pure_word_slash
+            | pure_latin_word
+            | dimension_pattern
+            | ordinal_pattern
+            | date_pattern
+        )
         accepted_inputs = pynini.difference(NEMO_SIGMA, exclusions).optimize()
 
         serial_graph = pynini.compose(accepted_inputs, serial_graph).optimize()
