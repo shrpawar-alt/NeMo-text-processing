@@ -103,7 +103,9 @@ class ClassifyFst(GraphFst):
             serial = SerialFst(cardinal=cardinal, deterministic=deterministic)
             serial_graph = serial.fst
 
-            measure = MeasureFst(cardinal=cardinal, decimal=decimal, ordinal=ordinal, serial=serial, input_case=input_case)
+            measure = MeasureFst(
+                cardinal=cardinal, decimal=decimal, ordinal=ordinal, serial=serial, input_case=input_case
+            )
             measure_graph = measure.fst
 
             money = MoneyFst(cardinal=cardinal)

@@ -165,10 +165,10 @@ class MeasureFst(GraphFst):
 
         code_processor = insert_space + serial.mixed_alphanum_graph
 
-        # Pure numeric runs: 1-3 digits read as cardinal, 4+ digits read digit-by-digit 
+        # Pure numeric runs: 1-3 digits read as cardinal, 4+ digits read digit-by-digit
         number_run = pynini.compose(pynini.closure(single_digit, 1), cardinal.code_num_graph).optimize()
-        
-        #A positive weight of 0.5 penalizes multiple uses of this arc. This forces the FST to consume all contiguous digits as ONE run (cost 0.5) instead of splitting "625" into "6" and "25" (cost 1.0).
+
+        # A positive weight of 0.5 penalizes multiple uses of this arc. This forces the FST to consume all contiguous digits as ONE run (cost 0.5) instead of splitting "625" into "6" and "25" (cost 1.0).
         number_run_processor = insert_space + number_run
 
         token_processor = (

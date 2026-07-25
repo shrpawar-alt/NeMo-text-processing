@@ -372,19 +372,21 @@ class CardinalFst(GraphFst):
 
         # --- Centralized logic for Address & Serial classes ---
         # 1-3 digit groups read as cardinals, 4+ digits read digit-by-digit
-        limited_cardinal_graph = (
-            self.digit | self.zero | self.teens_and_ties | self.graph_hundreds
-        ).optimize()
-        
-        any_digit = pynini.union(NEMO_DIGIT, pynini.project(pynini.union(
-            pynini.string_file(get_abs_path("data/numbers/digit.tsv")), 
-            pynini.string_file(get_abs_path("data/numbers/zero.tsv"))
-        ), "input")).optimize()
+        limited_cardinal_graph = (self.digit | self.zero | self.teens_and_ties | self.graph_hundreds).optimize()
 
-        digitwise_4plus = pynini.compose(
-            any_digit ** 4 + pynini.closure(any_digit), self.single_digits_graph
+        any_digit = pynini.union(
+            NEMO_DIGIT,
+            pynini.project(
+                pynini.union(
+                    pynini.string_file(get_abs_path("data/numbers/digit.tsv")),
+                    pynini.string_file(get_abs_path("data/numbers/zero.tsv")),
+                ),
+                "input",
+            ),
         ).optimize()
-        
+
+        digitwise_4plus = pynini.compose(any_digit**4 + pynini.closure(any_digit), self.single_digits_graph).optimize()
+
         self.code_num_graph = (limited_cardinal_graph | digitwise_4plus).optimize()
 
         self.final_graph = final_graph.optimize()
