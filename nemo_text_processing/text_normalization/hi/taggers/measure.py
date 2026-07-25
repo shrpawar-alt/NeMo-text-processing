@@ -50,10 +50,7 @@ from nemo_text_processing.text_normalization.hi.graph_utils import (
 from nemo_text_processing.text_normalization.hi.utils import get_abs_path
 
 digit = pynini.string_file(get_abs_path("data/numbers/digit.tsv"))
-teens_ties_hi = pynini.string_file(get_abs_path("data/numbers/teens_and_ties.tsv"))
-teens_ties_en = pynini.string_file(get_abs_path("data/numbers/teens_and_ties_en.tsv"))
-teens_ties = pynini.union(teens_ties_hi, teens_ties_en)
-teens_and_ties = pynutil.add_weight(teens_ties, -0.1)
+
 # Shared Address Maps
 zero = pynini.string_file(get_abs_path("data/numbers/zero.tsv"))
 telephone_number = pynini.string_file(get_abs_path("data/telephone/number.tsv"))
@@ -97,10 +94,8 @@ class MeasureFst(GraphFst):
         # Pincode (6 digits) -> always digit-by-digit (length >= 4)
         pincode = (num_token + pynini.closure(insert_space + num_token, 5, 5)).optimize()
 
-        # Street number: 1-3 digits read as cardinal, 4+ digits read digit-by-digit
-        num_1to3 = (cardinal.digit | cardinal.zero | cardinal.teens_and_ties | cardinal.graph_hundreds).optimize()
-        num_4plus = (num_token + pynini.closure(insert_space + num_token, 3)).optimize()
-        street_num = (num_1to3 | num_4plus).optimize()
+        # Street number: Use centralized digit-by-digit logic from cardinal
+        street_num = cardinal.code_num_graph
 
         # Text: words with trailing separator (comma? + space)
         any_digit = pynini.union(NEMO_HI_DIGIT, NEMO_DIGIT).optimize()
@@ -130,7 +125,7 @@ class MeasureFst(GraphFst):
         )
         return pynutil.add_weight(graph, 1.0).optimize()
 
-    def get_address_graph(self, cardinal: GraphFst, ordinal: GraphFst, input_case: str):
+    def get_address_graph(self, cardinal: GraphFst, ordinal: GraphFst, serial: GraphFst, input_case: str):
         """
         Address tagger that fires when address context keywords are present.
 
@@ -160,63 +155,34 @@ class MeasureFst(GraphFst):
             NEMO_CHAR, pynini.union(NEMO_WHITE_SPACE, convertible_char, pynini.accep(COMMA))
         ).optimize()
 
-        # Token processors with weights: prefer ordinals; English words are left untouched
-        # Delete space before comma to avoid Sparrowhawk "sil" issue
-        comma_processor = pynutil.add_weight(delete_space + pynini.accep(COMMA), 0.0)
-        # Slight preference (-0.5) to ensure ordinals beat alphanumeric code splits
-        ordinal_processor = pynutil.add_weight(insert_space + ordinal_graph, -0.5)
-        # Pass English words (2+ letters) through unchanged; single letters go to letter_processor
+        comma_processor = delete_space + pynini.accep(COMMA)
+        ordinal_processor = insert_space + ordinal_graph
         latin_word = single_letter + pynini.closure(single_letter, 1)
-        english_word_processor = pynutil.add_weight(insert_space + latin_word, 0.1)
-        letter_processor = pynutil.add_weight(insert_space + pynini.compose(single_letter, letter_to_word), 0.5)
-        # Transliterate separators ("-"/"/"); digits are handled separately by number_run_processor
-        special_char_processor = pynutil.add_weight(insert_space + pynini.compose(special_chars, char_to_word), 0.0)
-        other_word_processor = pynutil.add_weight(insert_space + pynini.closure(non_space_char, 1), 0.1)
+        english_word_processor = insert_space + latin_word
+        letter_processor = insert_space + pynini.compose(single_letter, letter_to_word)
+        special_char_processor = insert_space + pynini.compose(special_chars, char_to_word)
+        other_word_processor = insert_space + pynini.closure(non_space_char, 1)
 
-        # --- Alphanumeric codes (letter+digit): letters -> Devanagari, digits via cross-class rule ---
-        code_letter = pynini.compose(single_letter, letter_to_word).optimize()
-        code_letters = code_letter + pynini.closure(insert_space + code_letter)
-        code_num_1to3 = (cardinal.digit | cardinal.zero | cardinal.teens_and_ties | cardinal.graph_hundreds).optimize()
-        code_num_4plus = pynini.compose(
-            single_digit**4 + pynini.closure(single_digit), cardinal.single_digits_graph
-        ).optimize()
-        code_num = (code_num_1to3 | code_num_4plus).optimize()
-        code_seg = (code_letters | code_num).optimize()
-        code_delim = pynini.union(HYPHEN, SLASH, NEMO_SPACE).optimize()
-        code_core = (code_seg + pynini.closure(code_delim + code_seg, 1)).optimize()
-        # Insert spaces at letter<->digit boundaries for glued codes (e.g., "F16" -> "F 16")
-        insert_sp_alpha_digit = pynini.cdrewrite(insert_space, single_letter, single_digit, NEMO_SIGMA)
-        insert_sp_digit_alpha = pynini.cdrewrite(insert_space, single_digit, single_letter, NEMO_SIGMA)
-        code_space_inserter = pynini.compose(insert_sp_alpha_digit, insert_sp_digit_alpha).optimize()
-        glued_code = pynini.compose(code_space_inserter, code_core).optimize()
-        code_transliterate = pynini.union(code_core, glued_code).optimize()
-        # Restrict to tokens containing BOTH a letter and a digit to prevent fragmented parsing
-        code_char = pynini.union(single_letter, single_digit, pynini.accep(HYPHEN), pynini.accep(SLASH))
-        has_latin_letter = pynini.closure(code_char) + single_letter + pynini.closure(code_char)
-        has_digit = pynini.closure(code_char) + single_digit + pynini.closure(code_char)
-        code_only = pynini.intersect(
-            pynini.intersect(pynini.closure(code_char, 1), has_latin_letter), has_digit
-        ).optimize()
-        code_transliterate = pynini.compose(code_only, code_transliterate).optimize()
-        # Strip internal weights; standalone codes naturally beat split alternatives without outer weights
-        code_transliterate = pynini.arcmap(code_transliterate, map_type="rmweight").optimize()
-        code_processor = insert_space + code_transliterate
+        code_processor = insert_space + serial.mixed_alphanum_graph
 
-        # Pure numeric runs: 1-3 digits read as cardinal, 4+ digits read digit-by-digit
-        number_run = pynini.compose(pynini.closure(single_digit, 1), code_num).optimize()
-        number_run_processor = pynutil.add_weight(insert_space + number_run, 0.5)
+        # Pure numeric runs: 1-3 digits read as cardinal, 4+ digits read digit-by-digit 
+        number_run = pynini.compose(pynini.closure(single_digit, 1), cardinal.code_num_graph).optimize()
+        
+        #A positive weight of 0.5 penalizes multiple uses of this arc. This forces the FST to consume all contiguous digits as ONE run (cost 0.5) instead of splitting "625" into "6" and "25" (cost 1.0).
+        number_run_processor = insert_space + number_run
 
         token_processor = (
-            ordinal_processor
-            | english_word_processor
-            | code_processor
-            | number_run_processor
-            | letter_processor
-            | special_char_processor
-            | pynini.accep(NEMO_SPACE)
+            pynini.accep(NEMO_SPACE)
             | comma_processor
-            | other_word_processor
+            | pynutil.add_weight(special_char_processor, 0.0)
+            | code_processor
+            | pynutil.add_weight(ordinal_processor, -0.5)
+            | pynutil.add_weight(number_run_processor, 0.5)
+            | pynutil.add_weight(letter_processor, 0.5)
+            | pynutil.add_weight(english_word_processor, 0.1)
+            | pynutil.add_weight(other_word_processor, 0.1)
         ).optimize()
+
         full_string_processor = pynini.closure(token_processor, 1).optimize()
 
         # Window-based context matching around address keywords for robust detection
@@ -238,9 +204,9 @@ class MeasureFst(GraphFst):
             + address_graph
             + pynutil.insert('" } preserve_order: true')
         )
-        return pynutil.add_weight(graph, 1.05).optimize()
+        return graph.optimize()
 
-    def __init__(self, cardinal: GraphFst, decimal: GraphFst, ordinal: GraphFst, input_case: str):
+    def __init__(self, cardinal: GraphFst, decimal: GraphFst, ordinal: GraphFst, serial: GraphFst, input_case: str):
         super().__init__(name="measure", kind="classify")
 
         cardinal_graph = (
@@ -488,7 +454,7 @@ class MeasureFst(GraphFst):
             + pynutil.insert("\"")
         )
 
-        address_graph = self.get_address_graph(cardinal, ordinal, input_case)
+        address_graph = self.get_address_graph(cardinal, ordinal, serial, input_case)
         structured_address_graph = self.get_structured_address_graph(cardinal, ordinal, input_case)
 
         graph = (

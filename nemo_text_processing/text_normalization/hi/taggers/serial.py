@@ -61,15 +61,8 @@ class SerialFst(GraphFst):
 
         any_digit = pynini.union(NEMO_DIGIT, devanagari_digits).optimize()
 
-        limited_cardinal_graph = (
-            cardinal.digit | cardinal.zero | cardinal.teens_and_ties | cardinal.graph_hundreds
-        ).optimize()
-
-        # Number-group sizing for codes: 1-3 digit groups are read as cardinals and 4+ digits are read as digit by digit
-        digitwise_4plus = pynini.compose(
-            any_digit**4 + pynini.closure(any_digit), cardinal.single_digits_graph
-        ).optimize()
-        num_graph = (limited_cardinal_graph | digitwise_4plus).optimize()
+        # Fetch centralized 1-3 vs 4+ digit logic from cardinal
+        num_graph = cardinal.code_num_graph
 
         symbols_graph = pynini.string_file(get_abs_path("data/serial/special_symbols.tsv")).optimize()
 
@@ -100,6 +93,16 @@ class SerialFst(GraphFst):
 
         glued_serial = pynini.compose(space_inserter, serial_core).optimize()
         serial_graph = pynini.union(serial_graph, glued_serial).optimize()
+
+        # Reusable mixed alphanumeric-code graph
+        code_join_char = pynini.union(all_alphas, any_digit, pynini.accep("-"), pynini.accep("/"))
+        has_letter = pynini.closure(code_join_char) + all_alphas + pynini.closure(code_join_char)
+        has_digit = pynini.closure(code_join_char) + any_digit + pynini.closure(code_join_char)
+        mixed_code_only = pynini.intersect(
+            pynini.intersect(pynini.closure(code_join_char, 1), has_letter), has_digit
+        ).optimize()
+
+        self.mixed_alphanum_graph = pynini.compose(mixed_code_only, serial_graph).optimize()
 
         power_special = pynutil.add_weight(
             pynini.string_file(get_abs_path("data/serial/power_special.tsv")), -1.0

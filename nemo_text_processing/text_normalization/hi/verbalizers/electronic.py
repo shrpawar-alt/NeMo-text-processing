@@ -90,17 +90,12 @@ class ElectronicFst(GraphFst):
         delete_fragment_id_tag = pynutil.delete("fragment_id: \"")
         delete_quote = pynutil.delete("\"")
 
-        username_content = make_content()
-        username_graph = delete_username_tag + username_content + delete_quote + delete_space + pynutil.insert("एट ")
+        general_content = make_content()
 
-        domain_content = pynutil.add_weight(make_content(), 1.0)
-
-        domain_only_graph = delete_domain_tag + domain_content + delete_quote
-
+        username_graph = delete_username_tag + general_content + delete_quote + delete_space + pynutil.insert("एट ")
+        domain_only_graph = delete_domain_tag + general_content + delete_quote
         protocol_only_graph = delete_protocol_tag + protocol_graph + insert_space + delete_quote + delete_space
-
-        path_content = make_content()
-        path_graph = delete_path_tag + path_content + delete_quote
+        path_graph = delete_path_tag + general_content + delete_quote
 
         chem_graph = delete_fragment_id_tag + chem_content + delete_quote
 
