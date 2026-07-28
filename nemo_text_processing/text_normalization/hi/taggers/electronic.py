@@ -22,7 +22,7 @@ from nemo_text_processing.text_normalization.hi.utils import get_abs_path
 class ElectronicFst(GraphFst):
     """
     Finite state transducer for classifying electronic: as URLs, email addresses, file paths,
-    IP addresses, domains, chemical formulas, and alphanumeric codes.
+    IP addresses, domains, and chemical formulas.
         e.g. kumar@gmail.com -> tokens { electronic { username: "kumar" domain: "gmail.com" } }
         e.g. https://google.com/ -> tokens { electronic { protocol: "https" domain: "google.com/" } }
         e.g. C:\\Users\\HP\\Desktop -> tokens { electronic { path: "C:\\Users\\HP\\Desktop" } }
@@ -157,22 +157,13 @@ class ElectronicFst(GraphFst):
         unbalanced_trailing = pynini.intersect(no_open, ends_with_close)
         valid_chemical = pynini.difference(raw_chemical, unbalanced_trailing).optimize()
 
-        chemical_formula = pynutil.insert("domain: \"") + valid_chemical + pynutil.insert("\"")
+        # Recognise a chemical formula only when it uses subscript notation
+        chem_sigma = pynini.closure(NEMO_ALPHA | NEMO_DIGIT | subscript_digit | chemical_symbols)
+        contains_subscript = chem_sigma + subscript_digit + chem_sigma
+        valid_chemical = pynini.intersect(valid_chemical, contains_subscript).optimize()
 
-        alnum_seg = pynini.closure(NEMO_ALPHA | NEMO_DIGIT, 1)
-        separator = pynini.accep("-") | pynini.accep(".")
-        alphanumeric_pattern = alnum_seg + pynini.closure(separator + alnum_seg)
-
-        alnum_hyp_dot_sigma = pynini.closure(NEMO_ALPHA | NEMO_DIGIT | pynini.accep("-") | pynini.accep("."))
-
-        contains_alpha = alnum_hyp_dot_sigma + NEMO_ALPHA + alnum_hyp_dot_sigma
-        contains_digit = alnum_hyp_dot_sigma + NEMO_DIGIT + alnum_hyp_dot_sigma
-
-        alphanumeric_code_fst = pynini.intersect(
-            pynini.intersect(alphanumeric_pattern, contains_alpha), contains_digit
-        ).optimize()
-
-        alphanumeric_code = pynutil.insert("domain: \"") + alphanumeric_code_fst + pynutil.insert("\"")
+        # Chemical formulas carry a dedicated tag so the verbalizer can spell element
+        chemical_formula = pynutil.insert("fragment_id: \"") + valid_chemical + pynutil.insert("\"")
 
         graph = (
             pynutil.add_weight(url_graph, 1.0)
@@ -184,7 +175,6 @@ class ElectronicFst(GraphFst):
             | pynutil.add_weight(combined_domain, 1.1)
             | pynutil.add_weight(file_with_extension, 1.1)
             | pynutil.add_weight(chemical_formula, 1.2)
-            | pynutil.add_weight(alphanumeric_code, 1.2)
         )
 
         self.graph = graph.optimize()

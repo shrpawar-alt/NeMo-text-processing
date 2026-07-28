@@ -100,7 +100,12 @@ class ClassifyFst(GraphFst):
             ordinal = OrdinalFst(cardinal=cardinal, deterministic=deterministic)
             ordinal_graph = ordinal.fst
 
-            measure = MeasureFst(cardinal=cardinal, decimal=decimal, ordinal=ordinal, input_case=input_case)
+            serial = SerialFst(cardinal=cardinal, deterministic=deterministic)
+            serial_graph = serial.fst
+
+            measure = MeasureFst(
+                cardinal=cardinal, decimal=decimal, ordinal=ordinal, serial=serial, input_case=input_case
+            )
             measure_graph = measure.fst
 
             money = MoneyFst(cardinal=cardinal)
@@ -124,9 +129,6 @@ class ClassifyFst(GraphFst):
 
             electronic = ElectronicFst(deterministic=deterministic)
             electronic_graph = electronic.fst
-
-            serial = SerialFst(cardinal=cardinal, deterministic=deterministic)
-            serial_graph = serial.fst
 
             classify = (
                 pynutil.add_weight(whitelist_graph, 1.01)
