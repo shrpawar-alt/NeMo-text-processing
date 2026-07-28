@@ -29,6 +29,7 @@ from nemo_text_processing.text_normalization.hi.graph_utils import (
     HI_SAVVA,
     HYPHEN,
     LOWERCASE_X,
+    MIN_NEG_WEIGHT,
     NEMO_CHAR,
     NEMO_DIGIT,
     NEMO_HI_DIGIT,
@@ -46,7 +47,6 @@ from nemo_text_processing.text_normalization.hi.graph_utils import (
     capitalized_input_graph,
     delete_space,
     insert_space,
-    MIN_NEG_WEIGHT,
 )
 from nemo_text_processing.text_normalization.hi.utils import get_abs_path
 
@@ -181,10 +181,10 @@ class MeasureFst(GraphFst):
             | special_char_processor
             | code_processor
             | pynutil.add_weight(ordinal_processor, MIN_NEG_WEIGHT)
-            | pynutil.add_weight(number_run_processor, 0.5) # Keeps numbers together
+            | pynutil.add_weight(number_run_processor, 0.5)  # Keeps numbers together
             | letter_processor
             | english_word_processor
-            | pynutil.add_weight(other_word_processor, 0.1) # Keeps Hindi words together
+            | pynutil.add_weight(other_word_processor, 0.1)  # Keeps Hindi words together
         ).optimize()
 
         full_string_processor = pynini.closure(token_processor, 1).optimize()
