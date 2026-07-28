@@ -36,7 +36,7 @@ class ElectronicFst(GraphFst):
         electronic { protocol: "https" domain: "google.com/" } -> "https कोलन फॉरवर्ड स्लैश फॉरवर्ड स्लैश google डॉट com फॉरवर्ड स्लैश"
         electronic { path: "C:\\Users\\HP\\Desktop" } -> "C कोलन बैकवर्ड स्लैश Users बैकवर्ड स्लैश HP बैकवर्ड स्लैश Desktop"
         electronic { domain: "192.168.1.1" } -> "एक नौ दो डॉट एक छह आठ डॉट एक डॉट एक"
-        electronic { chem: "C₂H₄" } -> "सी दो एच चार"
+        electronic { fragment_id: "C₂H₄" } -> "सी दो एच चार"
 
     Args:
         deterministic: if True will provide a single transduction option,

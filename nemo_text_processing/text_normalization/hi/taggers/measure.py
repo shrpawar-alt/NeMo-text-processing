@@ -46,6 +46,7 @@ from nemo_text_processing.text_normalization.hi.graph_utils import (
     capitalized_input_graph,
     delete_space,
     insert_space,
+    MIN_NEG_WEIGHT,
 )
 from nemo_text_processing.text_normalization.hi.utils import get_abs_path
 
@@ -135,8 +136,8 @@ class MeasureFst(GraphFst):
             "593988" (6-digit pincode) -> "पाँच नौ तीन नौ आठ आठ"
             "32A नाज़ प्लाज़ा" -> "बत्तीस ए नाज़ प्लाज़ा"
         """
-        # Strip internal weights from ordinal graph so a small outer weight suffices
-        ordinal_graph = pynini.arcmap(ordinal.graph, map_type="rmweight").optimize()
+        # Retain internal weights of ordinal graph
+        ordinal_graph = ordinal.graph
         # Alphanumeric to word mappings (digits, special characters, telephone digits)
         char_to_word = (digit | zero | special_characters_map | telephone_number).optimize()
         letter_to_word = capitalized_input_graph(letters_map)
@@ -171,16 +172,19 @@ class MeasureFst(GraphFst):
         # A positive weight of 0.5 penalizes multiple uses of this arc. This forces the FST to consume all contiguous digits as ONE run (cost 0.5) instead of splitting "625" into "6" and "25" (cost 1.0).
         number_run_processor = insert_space + number_run
 
+        # A tiny positive penalty prevents multiple uses of this arc, forcing the FST to consume contiguous digits as ONE run instead of aggressively splitting them.
+        number_run_processor = insert_space + number_run
+
         token_processor = (
             pynini.accep(NEMO_SPACE)
             | comma_processor
-            | pynutil.add_weight(special_char_processor, 0.0)
+            | special_char_processor
             | code_processor
-            | pynutil.add_weight(ordinal_processor, -0.5)
-            | pynutil.add_weight(number_run_processor, 0.5)
-            | pynutil.add_weight(letter_processor, 0.5)
-            | pynutil.add_weight(english_word_processor, 0.1)
-            | pynutil.add_weight(other_word_processor, 0.1)
+            | pynutil.add_weight(ordinal_processor, MIN_NEG_WEIGHT)
+            | pynutil.add_weight(number_run_processor, 0.5) # Keeps numbers together
+            | letter_processor
+            | english_word_processor
+            | pynutil.add_weight(other_word_processor, 0.1) # Keeps Hindi words together
         ).optimize()
 
         full_string_processor = pynini.closure(token_processor, 1).optimize()
