@@ -47,10 +47,7 @@ class RomanFst(GraphFst):
         opt_ones = ones | zero
 
         roman_to_arabic = pynini.union(
-            thousands + opt_hundreds + opt_tens + opt_ones,
-            hundreds + opt_tens + opt_ones,
-            tens + opt_ones,
-            ones
+            thousands + opt_hundreds + opt_tens + opt_ones, hundreds + opt_tens + opt_ones, tens + opt_ones, ones
         ).optimize()
 
         roman_to_spoken_fst = pynini.compose(roman_to_arabic, cardinal.graph_without_leading_zeros).optimize()
@@ -75,14 +72,14 @@ class RomanFst(GraphFst):
             + pynutil.delete(separator)
             + insert_space
             + pynutil.insert('integer: "')
-            + roman_to_spoken_fst 
+            + roman_to_spoken_fst
             + pynutil.insert('"')
         ).optimize()
 
         numeral_before_key = (
             pynutil.insert("preserve_order: true ")
             + pynutil.insert('integer: "')
-            + roman_to_spoken_fst 
+            + roman_to_spoken_fst
             + pynutil.insert('"')
             + pynutil.delete(separator)
             + insert_space
@@ -92,11 +89,11 @@ class RomanFst(GraphFst):
         ).optimize()
 
         exception_rows = load_labels(get_abs_path("data/roman/roman_ordinal_exceptions.tsv"))
-        
+
         exception_graphs = []
         for fused, spoken_word in exception_rows:
             exception_graphs.append(
-                pynutil.insert('integer: "-"') 
+                pynutil.insert('integer: "-"')
                 + insert_space
                 + pynutil.insert('default_ordinal: "' + spoken_word + '"')
                 + pynutil.delete(fused)
@@ -105,7 +102,7 @@ class RomanFst(GraphFst):
 
         suffixes_fst = pynini.union(
             pynini.string_file(get_abs_path("data/ordinal/suffixes.tsv")),
-            pynini.string_file(get_abs_path("data/ordinal/suffixes_map.tsv"))
+            pynini.string_file(get_abs_path("data/ordinal/suffixes_map.tsv")),
         ).optimize()
 
         glued_ordinal_regular_graph = (

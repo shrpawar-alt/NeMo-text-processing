@@ -44,9 +44,7 @@ class RomanFst(GraphFst):
             pynutil.delete('key_cardinal: "') + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete('"')
         ).optimize()
 
-        integer = (
-            pynutil.delete('integer: "') + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete('"')
-        ).optimize()
+        integer = (pynutil.delete('integer: "') + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete('"')).optimize()
 
         default_ordinal = (
             pynutil.delete('default_ordinal: "') + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete('"')
