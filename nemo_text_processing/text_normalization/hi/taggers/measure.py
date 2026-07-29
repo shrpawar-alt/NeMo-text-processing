@@ -34,7 +34,6 @@ from nemo_text_processing.text_normalization.hi.graph_utils import (
     NEMO_DIGIT,
     NEMO_HI_DIGIT,
     NEMO_NOT_SPACE,
-    NEMO_SIGMA,
     NEMO_SPACE,
     NEMO_WHITE_SPACE,
     ONE_POINT_FIVE,
@@ -168,9 +167,6 @@ class MeasureFst(GraphFst):
 
         # Pure numeric runs: 1-3 digits read as cardinal, 4+ digits read digit-by-digit
         number_run = pynini.compose(pynini.closure(single_digit, 1), cardinal.code_num_graph).optimize()
-
-        # A positive weight of 0.5 penalizes multiple uses of this arc. This forces the FST to consume all contiguous digits as ONE run (cost 0.5) instead of splitting "625" into "6" and "25" (cost 1.0).
-        number_run_processor = insert_space + number_run
 
         # A tiny positive penalty prevents multiple uses of this arc, forcing the FST to consume contiguous digits as ONE run instead of aggressively splitting them.
         number_run_processor = insert_space + number_run
