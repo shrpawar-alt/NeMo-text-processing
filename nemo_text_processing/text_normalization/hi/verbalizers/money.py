@@ -47,7 +47,7 @@ class MoneyFst(GraphFst):
         currency_minor = pynutil.delete('currency_min: "') + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete('"')
 
         quantity = pynutil.delete('quantity: "') + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete('"')
-        
+
         drop_preserve_order = pynini.closure(
             pynutil.delete("preserve_order:") + sp + pynutil.delete("true") + sp, 0, 1
         )
@@ -108,7 +108,7 @@ class MoneyFst(GraphFst):
 
         for major in all_major_names:
             graph_major_slot = pynutil.delete('currency_maj: "') + pynutil.delete(major) + pynutil.delete('"')
-            
+
             scaled_decimal_graphs.append(
                 drop_preserve_order
                 + graph_major_slot
@@ -138,11 +138,11 @@ class MoneyFst(GraphFst):
         graph_scaled_major = pynini.union(*scaled_major_graphs)
 
         graph = (
-            graph_major_only 
-            | graph_major_minor 
-            | pynutil.add_weight(graph_minor_only, -0.1) 
-            | graph_decimal_money 
-            | graph_scaled_decimal 
+            graph_major_only
+            | graph_major_minor
+            | pynutil.add_weight(graph_minor_only, -0.1)
+            | graph_decimal_money
+            | graph_scaled_decimal
             | graph_scaled_major
         )
 

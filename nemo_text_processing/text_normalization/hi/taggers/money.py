@@ -94,8 +94,8 @@ class MoneyFst(GraphFst):
 
         # Load scale words dynamically from TSV
         quantity_graph = (
-            pynutil.insert('quantity: "') 
-            + pynini.string_file(get_abs_path("data/money/quantities.tsv")).optimize() 
+            pynutil.insert('quantity: "')
+            + pynini.string_file(get_abs_path("data/money/quantities.tsv")).optimize()
             + pynutil.insert('"')
         )
 
