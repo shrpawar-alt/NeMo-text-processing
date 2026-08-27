@@ -92,6 +92,40 @@ class MoneyFst(GraphFst):
         )
         guarded_decimal_digits = has_3plus_sig_digits @ decimal_digits
 
+        # Load scale words dynamically from TSV
+        quantity_graph = (
+            pynutil.insert('quantity: "') 
+            + pynini.string_file(get_abs_path("data/money/quantities.tsv")).optimize() 
+            + pynutil.insert('"')
+        )
+
+        # Allow an optional space between the number and the quantity word
+        delete_space_opt = pynini.closure(pynutil.delete(" "), 0, 1)
+
+        # Path for scaled money with decimals (e.g. ₹२.५ करोड़)
+        graph_scaled_decimal = (
+            optional_graph_negative
+            + currency_major
+            + insert_space
+            + integer
+            + pynini.cross(".", " ")
+            + decimal_digits
+            + delete_space_opt
+            + insert_space
+            + quantity_graph
+        ).optimize()
+
+        # Path for scaled money without decimals (e.g. ₹५ करोड़)
+        graph_scaled_major = (
+            optional_graph_negative
+            + currency_major
+            + insert_space
+            + integer
+            + delete_space_opt
+            + insert_space
+            + quantity_graph
+        ).optimize()
+
         graph_decimal_path = (
             optional_graph_negative
             + currency_major
@@ -150,6 +184,8 @@ class MoneyFst(GraphFst):
         graph_currencies = (
             pynutil.add_weight(graph_major_only_singular | graph_major_and_minor_singular, -0.001)
             | pynutil.add_weight(graph_decimal_path, -0.0005)
+            | pynutil.add_weight(graph_scaled_decimal, -0.0002)
+            | pynutil.add_weight(graph_scaled_major, -0.0002)
             | graph_major_only
             | graph_major_and_minor
         )
