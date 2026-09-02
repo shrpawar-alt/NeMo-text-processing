@@ -230,13 +230,12 @@ class MeasureFst(GraphFst):
 
         # All units EXCEPT year and percent
         unit_inputs_regular = pynini.difference(
-            pynini.project(unit_graph, "input"), 
-            pynini.union(pynini.accep("yr"), pynini.accep("%"))
+            pynini.project(unit_graph, "input"), pynini.union(pynini.accep("yr"), pynini.accep("%"))
         )
         unit_graph_no_year = pynini.compose(unit_inputs_regular, unit_graph)
 
         percent_graph = pynini.compose(pynini.accep("%"), unit_graph)
-        
+
         percent_unit = (
             pynutil.insert(NEMO_SPACE)
             + pynutil.insert("units: \"")
@@ -475,7 +474,7 @@ class MeasureFst(GraphFst):
             + pynutil.insert("\"")
             + pynutil.insert(NEMO_SPACE)
             + pynutil.insert("}")
-            + pynini.closure(delete_space, 0, 1)  
+            + pynini.closure(delete_space, 0, 1)
             + percent_unit
         )
 
@@ -484,7 +483,7 @@ class MeasureFst(GraphFst):
             + optional_graph_negative
             + decimal_graph
             + pynutil.insert(" }")
-            + pynini.closure(delete_space, 0, 1)  
+            + pynini.closure(delete_space, 0, 1)
             + percent_unit
         )
 
