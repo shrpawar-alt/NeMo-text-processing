@@ -99,7 +99,9 @@ class MoneyFst(GraphFst):
                 + sp
                 + integer_part
                 + sp
-                + pynutil.insert(" ") + pynutil.insert(decimal_word) + pynutil.insert(" ")
+                + pynutil.insert(" ")
+                + pynutil.insert(decimal_word)
+                + pynutil.insert(" ")
                 + fractional_part
                 + pynutil.insert(NEMO_SPACE)
                 + pynutil.insert(major)
@@ -118,7 +120,9 @@ class MoneyFst(GraphFst):
                 + sp
                 + integer_part
                 + sp
-                + pynutil.insert(" ") + pynutil.insert(decimal_word) + pynutil.insert(" ")
+                + pynutil.insert(" ")
+                + pynutil.insert(decimal_word)
+                + pynutil.insert(" ")
                 + fractional_part
                 + sp
                 + quantity
