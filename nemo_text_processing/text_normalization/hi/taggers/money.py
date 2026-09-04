@@ -45,6 +45,9 @@ class MoneyFst(GraphFst):
         _deva_to_ascii = pynini.invert(_en_to_hi_digit)
         deva_to_ascii = pynini.closure(_deva_to_ascii | pynini.union(*"0123456789"), 1)
 
+        decimal_tsv = pynini.string_file(get_abs_path("data/money/decimal.tsv"))
+        decimal_separator = pynini.project(decimal_tsv, "input")
+
         _ascii_digit = pynini.union(*"0123456789")
         _ascii_nonzero = pynini.union(*"123456789")
         _deva_nonzero = pynini.union(*"१२३४५६७८९")
@@ -77,7 +80,7 @@ class MoneyFst(GraphFst):
         )
 
         optional_delete_fractional_zeros = pynini.closure(
-            pynutil.delete(".") + pynini.closure(pynutil.delete("0") | pynutil.delete("०"), 1),
+            pynutil.delete(decimal_separator) + pynini.closure(pynutil.delete("0") | pynutil.delete("०"), 1),
             0,
             1,
         )
@@ -108,7 +111,7 @@ class MoneyFst(GraphFst):
             + currency_major
             + insert_space
             + integer
-            + pynini.cross(".", " ")
+            + pynini.cross(decimal_separator, " ")
             + decimal_digits
             + delete_space_opt
             + insert_space
@@ -133,7 +136,7 @@ class MoneyFst(GraphFst):
             + pynutil.insert('integer_part: "')
             + cardinal_graph
             + pynutil.insert('"')
-            + pynini.cross(".", " ")
+            + pynini.cross(decimal_separator, " ")
             + guarded_decimal_digits
         ).optimize()
 
@@ -168,7 +171,7 @@ class MoneyFst(GraphFst):
                     + curr_maj
                     + insert_space
                     + int_graph
-                    + pynini.cross(".", " ")
+                    + pynini.cross(decimal_separator, " ")
                     + fraction
                     + insert_space
                     + curr_min

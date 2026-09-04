@@ -44,6 +44,9 @@ class MoneyFst(GraphFst):
             pynutil.delete('fractional_part: "') + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete('"')
         )
 
+        decimal_tsv = pynini.string_file(get_abs_path("data/money/decimal.tsv"))
+        decimal_word = pynini.project(decimal_tsv, "output")
+
         currency_minor = pynutil.delete('currency_min: "') + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete('"')
 
         quantity = pynutil.delete('quantity: "') + pynini.closure(NEMO_NOT_QUOTE, 1) + pynutil.delete('"')
@@ -96,7 +99,7 @@ class MoneyFst(GraphFst):
                 + sp
                 + integer_part
                 + sp
-                + pynutil.insert(" दशमलव ")
+                + pynutil.insert(" ") + pynutil.insert(decimal_word) + pynutil.insert(" ")
                 + fractional_part
                 + pynutil.insert(NEMO_SPACE)
                 + pynutil.insert(major)
@@ -115,7 +118,7 @@ class MoneyFst(GraphFst):
                 + sp
                 + integer_part
                 + sp
-                + pynutil.insert(" दशमलव ")
+                + pynutil.insert(" ") + pynutil.insert(decimal_word) + pynutil.insert(" ")
                 + fractional_part
                 + sp
                 + quantity
